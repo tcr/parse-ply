@@ -155,11 +155,12 @@ PLYParser.prototype.getint = function(len) {
   for(var i=0; i<len; ++i) {
     var v = this.getchar();
     if(v < 0) {
-      while(i >= 0) {
-        this.rewind(data_buffer[i]);
+      while(i > 0) {
+        this.rewind(data_buffer[--i]);
       }
       return Number.NaN;
     }
+    data_buffer[i] = v;
   }
   var r = 0;
   if(this.format === PLY_FORMAT.BINARY_LITTLE_ENDIAN) {
@@ -178,11 +179,13 @@ PLYParser.prototype.getfloat = function(len) {
   for(var i=0; i<len; ++i) {
     var v = this.getchar();
     if(v < 0) {
-      while(i >= 0) {
-        this.rewind(data_buffer[i]);
+      console.log(data_buffer, i);
+      while(i > 0) {
+        this.rewind(data_buffer[--i]);
       }
       return Number.NaN;
     }
+    data_buffer[i] = v;
   }
   if(this.format !== SYSTEM_ENDIAN) {
     for(var i=0; i<len; ++i) {
@@ -240,7 +243,7 @@ PLYParser.prototype.processBinary = function() {
     while(this.current_index < c.count) {
       var idx = this.current_index;
       while(this.current_property < props.length) {
-        var p = props[this.current_property];
+        var p = props[this.current_property++];
         switch(p.type) {
           case PLY_TYPES.INT:
             var vi = this.getint(p.size0);
@@ -252,6 +255,9 @@ PLYParser.prototype.processBinary = function() {
           
           case PLY_TYPES.FLOAT:
             var vf = this.getfloat(p.size0);
+            if (v < -(1e10)) {
+                  throw new Error('Crazy invalid.');
+                }
             if(isNaN(vf)) {
               return false;
             }
@@ -278,6 +284,9 @@ PLYParser.prototype.processBinary = function() {
                 v = this.getint(p.size1);
               } else {
                 v = this.getfloat(p.size1);
+                if (v < -(1e10)) {
+                  throw new Error('Crazy invalid.');
+                }
               }
               if(isNaN(v)) {
                 return false;
@@ -571,7 +580,7 @@ TRAIL_EOL[0] = 10;
 PLYParser.prototype.onend = function() {
   this.ondata(TRAIL_EOL);
   this.clearBuffers();
-  if(this.state === PARSER_STATE.DONE) {
+  if(this.state >= PARSER_STATE.BODY) {
     this.stream.emit("data", this.createResult());
     this.stream.emit("end");
   } else if(this.state !== PARSER_STATE.ERROR) {

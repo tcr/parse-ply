@@ -1,6 +1,6 @@
 {
   "name": "parse-ply",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A streaming PLY parser",
   "main": "parse-ply.js",
   "directories": {
